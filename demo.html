@@ -1,0 +1,75 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>Title</title>
+    <meta name="description" content="Description">
+    <meta name="author" content="nobody">
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="src/Timer.js"></script>
+    <script src="src/Interpolation.js"></script>
+    <script src="src/Transition.js"></script>
+
+    <style>
+        #ball {
+            width: 64px;
+            height: 64px;
+            display: block;
+            position: absolute;
+            border-radius: 100%;
+            background-color: red;
+            left: 100px;
+            top: 200px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="ball"></div>
+
+
+    <script>
+    
+        const ball = {
+            x: 100,
+            y: 200,
+            transition: null,
+            element: null
+        };
+        console.log(ball);
+
+        function handleFrame() {
+            if (ball.transition) {
+                var x = ball.transition.update();
+                if (ball.transition.done) {
+                    ball.transition = null;
+                }
+                ball.x = x;
+            }
+            if (ball.element) {
+                ball.element.style.left = ball.x + "px";
+                ball.element.style.top = ball.y + "px";
+            }
+        }
+
+        window.onload = () => {
+            ball.element = document.getElementById('ball');
+            ball.element.addEventListener('click', () => {
+                const trgx = ball.x > 300 ? 100 : 1000;
+                ball.transition = new Transition(ball.x, trgx, 200 + 1300 * Math.random(), "bounce");
+            });
+        }
+
+        function frame() {
+            if (handleFrame) { handleFrame() }
+            requestAnimationFrame(frame);
+        }
+        frame();
+    </script>
+</body>
+</html>
