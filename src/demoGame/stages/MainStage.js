@@ -53,21 +53,24 @@ MainStage.prototype.render = function(ctx, timer) {
   const mouse = this.getMouse();
   if (mouse.click == 1) {
     if (!this.getKeyState("shift")) {
-      drawImage(ctx, this.cursorImage, mouse.x, mouse.y, timer.stageTime * 0.005, 0.25, 0.5, 0.5, 0.5, 0.5); 
+      drawImage(ctx, this.cursorImage, mouse.x, mouse.y, this.time * 0.005, 0.25, 0.5, 0.5, 0.5, 0.5); 
     } else {
-      const frame = absMod(Math.floor(timer.stageTime / 25), 70);
+      const frame = absMod(Math.floor(this.time / 25), 70);
       if (frame < this.explosionImage.frameCount) {
-        drawFrame(ctx, this.explosionImage, frame, mouse.x, mouse.y, timer.stageTime * 0.0005, 3); 
+        drawFrame(ctx, this.explosionImage, frame, mouse.x, mouse.y, this.time * 0.0005, 3); 
       }
     }
   }
 };
 
 MainStage.prototype.update = function(timer) {
+  if (this.timeDif == 0) {
+    return;
+  }
   this.prevP = this.p;
   const stillTime = 1400, animationTime = 600;
   const duration = 2 * (stillTime + animationTime);
-  let phase = timer.stageTime % duration;
+  let phase = this.time % duration;
   if (phase < duration / 2) {
     // Wrap left -> right
     if (phase < animationTime) {

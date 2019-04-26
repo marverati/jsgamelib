@@ -9,7 +9,6 @@ function StageManager(canvas, timer) {
   this.canvas = canvas;
   this.context = canvas.getContext("2d");
   this.timer = timer || new Timer();
-  this.stageTimes = {};
   this.sharedValues = {};
 
   // Register Event Listeners
@@ -26,10 +25,6 @@ StageManager.prototype.load = function() {
 StageManager.prototype.add = function(stage) {
   stage.setManager(this);
   this.allStages.push(stage);
-  this.stageTimes[stage.name] = {
-    dif: 0,
-    total: 0
-  };
   if (!this.activeStage) {
     this.setInstant(stage);
   }
@@ -167,15 +162,24 @@ StageManager.prototype.update = function() {
   }
   // Stages
   for (let stage of this.allStages) {
-    const stageTime = this.stageTimes[stage.name];
     if (stage.alive) {
-      stageTime.dif = this.timer.gameTimeDif * stage.opacity;
-      stageTime.total += stageTime.dif;
-      this.timer.stageTimeDif = stageTime.dif;
-      this.timer.stageTime = stageTime.total;
+      // Update stage timing
+      stage.aliveTimeDif = this.timer.gameTimeDif * stage.opacity;
+      stage.aliveTime += stage.aliveTimeDif;
+      if (stage.active) {
+        stage.timeDif = this.timer.gameTimeDif * stage.opacity;
+        stage.time += stage.timeDif;
+      } else {
+        if (this.currentStages[this.currentStages.length - 2] == stage && this.activeStage.opacity < 1) {
+          stage.timeDif = this.timer.gameTimeDif * (1 - this.activeStage.opacity);
+          stage.time += stage.timeDif;
+        } else {
+          stage.timeDif = 0;
+        }
+      }
       stage.update(this.timer);
     } else {
-      stageTime.dif = 0;
+      stage.aliveTimeDif = 0;
     }
   }
 };
@@ -190,8 +194,6 @@ StageManager.prototype.render = function() {
   activeStages.sort((s1, s2) => s1.zIndex - s2.zIndex);
   // Stages
   for (let stage of activeStages) {
-    this.timer.stageTimeDif = this.stageTimes[stage.name].dif;
-    this.timer.stageTime = this.stageTimes[stage.name].total;
     this.context.save();
     stage.render(this.context, this.timer);
     this.context.restore();

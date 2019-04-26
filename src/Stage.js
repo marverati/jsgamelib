@@ -10,6 +10,10 @@ function Stage(name, zIndex) {
   this.opacity = 0;
   this.isTransparent = false;
   this.isLoaded = false;
+  this.time = 0;
+  this.timeDif = 0;
+  this.aliveTime = 0;
+  this.aliveTimeDif = 0;
 }
 
 Stage.prototype.setManager = function(manager) {

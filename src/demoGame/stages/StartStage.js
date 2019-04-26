@@ -30,10 +30,10 @@ StartStage.prototype.render = function(ctx, timer) {
   ctx.globalAlpha = 1;
   let flowerAngle = 0;
   if (this.flowerTransition && !this.flowerTransition.done) {
-    flowerAngle = this.flowerTransition.update(timer.stageTime);
+    flowerAngle = this.flowerTransition.update(timer.gameTime);
   } else {
     const targetAngle = (rnd() < 0.5) ? 2 * Math.PI : -2 * Math.PI;
-    this.flowerTransition = new Transition(0, targetAngle, rnd(1000, 4500), Interpolators.getBounce(rnd(0.3, 2.5)), timer.stageTime + rnd(1000, 2800));
+    this.flowerTransition = new Transition(0, targetAngle, rnd(1000, 4500), Interpolators.getBounce(rnd(0.3, 2.5)), timer.gameTime + rnd(1000, 2800));
   }
   drawImage(ctx, this.flowerImage, w - 150, 150, flowerAngle, 0.5);
 };
