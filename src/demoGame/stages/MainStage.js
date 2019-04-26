@@ -23,7 +23,7 @@ MainStage.prototype.render = function(ctx, timer) {
   ctx.fillRect(0, 0, w, h);
   // Camera View
   ctx.translate(w / 2, h / 2);
-  keyHandler.setCanvasTransform(w / 2, h / 2);
+  mouseHandler.setCanvasTransform(w / 2, h / 2);
   // Solid image
   if (this.p == 0 || this.p == 1) {
     const img = this.images[Math.round(this.p)];
@@ -50,8 +50,9 @@ MainStage.prototype.render = function(ctx, timer) {
   }
 
   // Cursor
+  const mouse = this.getMouse();
   if (mouse.click == 1) {
-    if (!keyHandler.keyStates.shift) {
+    if (!this.getKeyState("shift")) {
       drawImage(ctx, this.cursorImage, mouse.x, mouse.y, timer.stageTime * 0.005, 0.25, 0.5, 0.5, 0.5, 0.5); 
     } else {
       const frame = absMod(Math.floor(timer.stageTime / 25), 70);
@@ -87,6 +88,8 @@ MainStage.prototype.update = function(timer) {
 
 MainStage.prototype.onkey = function(event) {
   if (event.key == "Escape") {
-    this.transitionTo("pause", 400);
+    this.transitionIn("pause", 400);
+  } else if (event.key == "Backspace") {
+    this.transitionTo("start", 1000);
   }
 }

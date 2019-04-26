@@ -28,6 +28,6 @@ PauseStage.prototype.render = function(ctx, timer) {
 
 PauseStage.prototype.onkey = function(event) {
   if (event.key == "Escape") {
-    this.transitionTo("main", 800);
+    this.transitionOut(800);
   }
 };

@@ -2,8 +2,8 @@
 
 function StageManager(canvas, timer) {
   this.allStages = [];
-  this.prevStage = null;
   this.activeStage = null;
+  this.currentStages = [];
   this.transitions = [];
   this.defaultDuration = 1000;
   this.canvas = canvas;
@@ -36,14 +36,14 @@ StageManager.prototype.add = function(stage) {
   return this;
 };
 
-StageManager.prototype.share = function(key, value, stage) {
+StageManager.prototype.shareValue = function(key, value, stage) {
   if (this.sharedValues.hasOwnProperty(key)) {
     throw new Error("Can't share key '" + key + "' from stage " + stage.name + ", as key is already shared");
   }
   this.sharedValues[key] = value;
 };
 
-StageManager.prototype.getShared = function(key, stage) {
+StageManager.prototype.getSharedValue = function(key, stage) {
   if (!this.sharedValues.hasOwnProperty(key)) {
     throw new Error("Can't retreive shared key '" + key + "' from stage " + stage.name + ", as this key has not been registered");
   }
@@ -51,11 +51,43 @@ StageManager.prototype.getShared = function(key, stage) {
 };
 
 StageManager.prototype.setInstant = function(stage) {
-  this.set(stage, 0);
+  this.crossfadeToStage(stage, 0);
 };
 
-StageManager.prototype.set = function(stage, fadeDuration = this.defaultDuration, fadeInDuration = fadeDuration) {
+StageManager.prototype.fadeOutStage = function(fadeDuration = this.defaultDuration, activatePrevious = true) {
+  if (activatePrevious && this.currentStages.length < 2) {
+    throw new Error("Can't fade out root stage: " + this.activeStage.name);
+  }
+  const prevStage = this.activeStage;
+  prevStage.prestop();
+  prevStage.active = false;
+  if (activatePrevious) {
+    this.activeStage = this.currentStages[this.currentStages.length - 2];
+    this.activeStage.resume();
+    this.activeStage.active = true;
+  }
+  // Fade out
+  if (fadeDuration > 0) {
+    this.transitions.push({
+      stage: prevStage,
+      fadeIn: false,
+      transition: new Transition(prevStage.opacity, 0, fadeDuration, undefined, this.timer.runTime)
+    });
+  } else {
+    // Instantly remove fading out stage from stack
+    this.currentStages = this.currentStages.filter(stage => stage != prevStage);
+    prevStage.alive = false;
+    prevStage.opacity = 0;
+    prevStage.stop();
+  }
+};
+
+StageManager.prototype.fadeInStage = function(stage, fadeDuration = this.defaultDuration) {
   stage = this.get(stage);
+  // Check if stage is already active, if so throw error
+  if (stage.alive) {
+    throw new Error("Can't activate stage that is already active: " + stage.name + " (from " + this.activeStage.name + ")");
+  }
   // Load stage first?
   if (stage.load && !stage.isLoaded) {
     stage.load();
@@ -63,38 +95,32 @@ StageManager.prototype.set = function(stage, fadeDuration = this.defaultDuration
   }
   // Callbacks of previous and new stage
   if (this.activeStage) {
-    this.activeStage.prestop();
+    this.activeStage.active = false;
   }
   stage.prestart();
-  // Handle stage states
-  stage.alive = true;
   stage.active = true;
-  if (this.activeStage) {
-    this.prevStage = this.activeStage;
-    this.prevStage.active = false;
-  }
-  this.activeStage = stage;
-  // Begin transitions
+  stage.alive = true;
+  // Fade in
   if (fadeDuration > 0) {
-    if (this.prevStage) {
-      this.transitions.push({
-        stage: this.prevStage,
-        fadeIn: false,
-        transition: new Transition(1, 0, fadeDuration, undefined, this.timer.runTime)
-      });
-    }
-  } else if (this.prevStage) {
-    this.prevStage.opacity = 0;
-  }
-  if (fadeInDuration > 0) {
     this.transitions.push({
-      stage: this.activeStage,
+      stage: stage,
       fadeIn: true,
-      transition: new Transition(0, 1, fadeInDuration, undefined, this.timer.runTime)
+      transition: new Transition(stage.opacity, 1, fadeDuration, undefined, this.timer.runTime)
     });
   } else {
-    this.activeStage.opacity = 1;
+    // Instantly activate new stage
+    stage.opacity = 1;
+    stage.start();
   }
+  // Push to stack
+  this.currentStages.push(stage);
+  this.activeStage = stage;
+};
+
+StageManager.prototype.crossfadeToStage = function(stage, fadeDuration = this.defaultDuration, fadeInDuration = fadeDuration) {
+  if (this.activeStage)
+    this.fadeOutStage(fadeDuration, false);
+  this.fadeInStage(stage, fadeInDuration);
 };
 
 StageManager.prototype.get = function(stage) {
@@ -125,6 +151,15 @@ StageManager.prototype.update = function() {
       } else {
         // Fade out ready
         this.transitions[t].stage.stop();
+        // Remove stage from current stages stack
+        this.currentStages = this.currentStages.filter(stage => stage != this.transitions[t].stage);
+      }
+      // Clear duplicates
+      for (let j = t - 1; j >= 0; j--) {
+        if (this.transitions[j].stage == this.transitions[t].stage) {
+          this.transitions.splice(j, 1);
+          t--;
+        }
       }
       // Remove transition
       this.transitions.splice(t, 1);
@@ -151,10 +186,6 @@ StageManager.prototype.render = function() {
   this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
   // Sort active stages by their z-index
   const activeStages = this.allStages.filter(stage => stage.alive && stage.opacity > 0);
-  // Render previous stage in case current one is transparent
-  if (this.prevStage && !this.prevStage.active && this.activeStage.isTransparent) {
-    activeStages.push(this.prevStage);
-  }
   // Sort by z-index
   activeStages.sort((s1, s2) => s1.zIndex - s2.zIndex);
   // Stages

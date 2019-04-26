@@ -17,15 +17,50 @@ Stage.prototype.setManager = function(manager) {
 };
 
 Stage.prototype.transitionTo = function(stage, duration) {
-  this.manager.set(stage, duration);
+  this.manager.crossfadeToStage(stage, duration);
 };
 
+Stage.prototype.transitionIn = function(stage, duration) {
+  this.manager.fadeInStage(stage, duration);
+};
+
+Stage.prototype.transitionOut = function(duration) {
+  if (!this.active) {
+    throw new Error("Stage can't transition out when it's not active: " + this.name + ". Active stage is " + this.manager.activeStage.name);
+  }
+  this.manager.fadeOutStage(duration);
+}
+
 Stage.prototype.share = function(key, value) {
-  this.manager.share(key, value, this);
+  this.manager.shareValue(key, value, this);
 };
 
 Stage.prototype.getShared = function(key) {
-  return this.manager.getShared(key, this);
+  return this.manager.getSharedValue(key, this);
+};
+
+Stage.prototype.getKeyState = function(key) {
+  if (this.active) {
+    return keyHandler.keyStates[key];
+  } else {
+    return false;
+  }
+};
+
+Stage.prototype.getMouse = function() {
+  if (this.active) {
+    return mouse;
+  } else {
+    return {
+      click: 0,
+      absX: NaN,
+      absY: NaN,
+      canvasX: NaN,
+      canvasY: NaN,
+      x: NaN,
+      y: NaN
+    };
+  }
 };
 
 Stage.prototype.render = function(ctx, timer) {
@@ -41,6 +76,10 @@ Stage.prototype.preload = function() {
 };
 
 Stage.prototype.prestart = function() {
+
+};
+
+Stage.prototype.resume = function() {
 
 };
 
